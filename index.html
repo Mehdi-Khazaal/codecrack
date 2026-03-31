@@ -28,8 +28,6 @@
     min-height: 100vh;
     overflow-x: hidden;
   }
-
-  /* ─── Background blobs ─── */
   body::before, body::after {
     content: '';
     position: fixed;
@@ -41,10 +39,8 @@
   }
   body::before { width: 500px; height: 500px; background: var(--p1); top: -100px; left: -100px; }
   body::after  { width: 600px; height: 600px; background: var(--p2); bottom: -150px; right: -150px; }
-
   #app { position: relative; z-index: 1; }
 
-  /* ─── Shared layout ─── */
   .screen { display: none; min-height: 100vh; padding: 24px 16px; }
   .screen.active { display: flex; flex-direction: column; align-items: center; }
 
@@ -99,14 +95,11 @@
   }
   .btn:hover { transform: translateY(-2px); }
   .btn:active { transform: translateY(0); }
-  .btn-primary { background: linear-gradient(135deg, var(--p1), #ff9a3c); color: #fff; box-shadow: 0 4px 18px rgba(255,107,107,.35); }
+  .btn-primary   { background: linear-gradient(135deg, var(--p1), #ff9a3c); color: #fff; box-shadow: 0 4px 18px rgba(255,107,107,.35); }
   .btn-secondary { background: linear-gradient(135deg, var(--p2), #0099cc); color: #fff; box-shadow: 0 4px 18px rgba(78,205,196,.3); }
-  .btn-ghost { background: var(--card2); border: 1.5px solid var(--border); color: var(--muted); }
-  .btn-gold { background: linear-gradient(135deg, var(--gold), #ff9f43); color: var(--bg); box-shadow: 0 4px 18px rgba(255,209,102,.35); }
-  .btn-sm { padding: 8px 16px; font-size: 0.95rem; width: auto; }
-
-  .divider { display: flex; align-items: center; gap: 10px; margin: 18px 0; color: var(--muted); font-size: 0.85rem; font-weight: 700; }
-  .divider::before, .divider::after { content:''; flex:1; height:1px; background: var(--border); }
+  .btn-ghost     { background: var(--card2); border: 1.5px solid var(--border); color: var(--muted); }
+  .btn-gold      { background: linear-gradient(135deg, var(--gold), #ff9f43); color: var(--bg); box-shadow: 0 4px 18px rgba(255,209,102,.35); }
+  .btn-sm        { padding: 8px 16px; font-size: 0.95rem; width: auto; }
 
   .room-code-display {
     font-family: 'Fredoka One', cursive;
@@ -125,7 +118,7 @@
   .room-code-display:hover { background: #2a2740; }
   .copy-hint { text-align: center; font-size: 0.78rem; color: var(--muted); margin-top: -10px; margin-bottom: 12px; }
 
-  /* ─── Digit input ─── */
+  /* Digit input (set code screen) */
   .digit-row { display: flex; gap: 10px; justify-content: center; margin: 16px 0; }
   .digit-box {
     width: 60px; height: 70px;
@@ -142,7 +135,7 @@
   .digit-box:focus { border-color: var(--gold); transform: scale(1.05); }
   .digit-box.filled { border-color: var(--purple); }
 
-  /* ─── Waiting ─── */
+  /* Waiting */
   .pulse-ring {
     width: 80px; height: 80px;
     border-radius: 50%;
@@ -155,7 +148,7 @@
   }
   @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(78,205,196,.4)} 50%{box-shadow:0 0 0 18px rgba(78,205,196,0)} }
 
-  /* ─── Game screen ─── */
+  /* Game screen */
   #game-screen { padding: 12px 10px; }
   .game-layout { width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   @media(max-width: 660px) { .game-layout { grid-template-columns: 1fr; } }
@@ -166,21 +159,69 @@
     border-radius: var(--radius);
     padding: 16px;
     display: flex; flex-direction: column; gap: 10px;
+    transition: box-shadow .3s, border-color .3s;
   }
   .player-panel.p1-panel { border-color: var(--p1); }
   .player-panel.p2-panel { border-color: var(--p2); }
+
+  /* Active turn glow */
+  .player-panel.active-turn { box-shadow: 0 0 0 3px rgba(255,209,102,.35), 0 0 24px rgba(255,209,102,.12); }
+
   .panel-header { display: flex; align-items: center; justify-content: space-between; }
+
+  /* ── Name tag is now clickable to peek ── */
   .player-name-tag {
     font-family: 'Fredoka One', cursive;
     font-size: 1.1rem;
     padding: 4px 12px;
     border-radius: 8px;
     letter-spacing: 1px;
+    cursor: default;
+    user-select: none;
+    position: relative;
   }
+  .player-name-tag.peekable {
+    cursor: pointer;
+    text-decoration: underline dotted;
+  }
+  .player-name-tag.peekable:hover { opacity: .85; }
   .p1-tag { background: rgba(255,107,107,.2); color: var(--p1); }
   .p2-tag { background: rgba(78,205,196,.2); color: var(--p2); }
-  .you-badge { font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: var(--gold); color: var(--bg); }
+
+  /* Peek popup */
+  .peek-popup {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background: var(--card);
+    border: 2px solid var(--gold);
+    border-radius: 12px;
+    padding: 10px 16px;
+    z-index: 50;
+    white-space: nowrap;
+    box-shadow: 0 8px 28px rgba(0,0,0,.5);
+    animation: peekIn .15s ease;
+    pointer-events: none;
+  }
+  @keyframes peekIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+  .peek-label { font-size: 0.68rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .peek-digits { font-family: 'Fredoka One', cursive; font-size: 1.6rem; letter-spacing: 8px; color: var(--gold); }
+
+  .you-badge { font-size: 0.7rem; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: var(--gold); color: var(--bg); margin-left: 4px; }
   .guess-count { font-size: 0.8rem; color: var(--muted); font-weight: 700; }
+
+  /* Turn waiting banner */
+  .turn-wait-banner {
+    background: rgba(167,169,190,.07);
+    border: 1.5px dashed var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-weight: 700;
+    display: none;
+  }
 
   /* Guess history */
   .guess-history { display: flex; flex-direction: column; gap: 6px; max-height: 340px; overflow-y: auto; padding-right: 4px; }
@@ -198,11 +239,10 @@
     border: 2px solid transparent;
     transition: all .3s;
   }
-  .guess-digit.correct   { background: rgba(6,214,160,.2);  border-color: var(--green);  color: var(--green);  }
-  .guess-digit.present   { background: rgba(255,209,102,.2); border-color: var(--gold);   color: var(--gold);   }
-  .guess-digit.absent    { background: rgba(167,169,190,.1); border-color: var(--muted);  color: var(--muted);  }
-  .guess-digit.hidden    { background: rgba(167,169,190,.1); border-color: var(--border); color: var(--muted);  }
-  .guess-digit.neutral   { background: rgba(167,169,190,.08); border-color: var(--border); color: var(--text); }
+  .guess-digit.correct { background: rgba(6,214,160,.2);  border-color: var(--green); color: var(--green); }
+  .guess-digit.present { background: rgba(255,209,102,.2); border-color: var(--gold);  color: var(--gold); }
+  .guess-digit.absent  { background: rgba(167,169,190,.1); border-color: var(--muted); color: var(--muted); }
+  .guess-digit.neutral { background: rgba(167,169,190,.08); border-color: var(--border); color: var(--text); }
   .hard-count-badge {
     margin-left: 10px;
     padding: 7px 10px;
@@ -215,7 +255,7 @@
     white-space: nowrap;
   }
 
-  /* Guess input area */
+  /* Guess input */
   .guess-input-area {
     background: var(--card2);
     border: 1.5px solid var(--border);
@@ -235,6 +275,7 @@
     text-align: center;
     outline: none;
     transition: border-color .2s;
+    caret-color: transparent;
   }
   .guess-box:focus { border-color: var(--gold); }
 
@@ -247,8 +288,8 @@
     padding: 12px 18px;
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
     flex-wrap: wrap;
+    margin-bottom: 12px;
   }
-  .status-text { font-weight: 700; font-size: 0.95rem; }
   .turn-indicator {
     font-family: 'Fredoka One', cursive;
     font-size: 1rem;
@@ -256,17 +297,13 @@
     border-radius: 8px;
     background: var(--card2);
   }
+  .turn-indicator.my-turn    { background: rgba(255,209,102,.15); color: var(--gold); border: 1px solid rgba(255,209,102,.4); }
+  .turn-indicator.their-turn { background: rgba(167,169,190,.08); color: var(--muted); }
   .score-pills { display: flex; gap: 8px; }
-  .score-pill {
-    font-family: 'Fredoka One', cursive;
-    font-size: 0.95rem;
-    padding: 4px 12px;
-    border-radius: 8px;
-  }
+  .score-pill { font-family: 'Fredoka One', cursive; font-size: 0.95rem; padding: 4px 12px; border-radius: 8px; }
   .sp1 { background: rgba(255,107,107,.2); color: var(--p1); }
   .sp2 { background: rgba(78,205,196,.2); color: var(--p2); }
 
-  /* Legend */
   .legend { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
   .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: var(--muted); font-weight: 700; }
   .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
@@ -274,7 +311,7 @@
   .ld-present { background: var(--gold); }
   .ld-absent  { background: var(--border); }
 
-  /* ─── Result overlay ─── */
+  /* Result overlay */
   .overlay {
     display: none;
     position: fixed; inset: 0;
@@ -303,15 +340,14 @@
   .result-code-label { font-size: 0.7rem; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
   .result-code-val { font-family: 'Fredoka One', cursive; font-size: 1.5rem; letter-spacing: 4px; }
 
-  /* ─── Notifications ─── */
+  /* Notifications */
   #notif {
     position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
     background: var(--card2);
     border: 1.5px solid var(--border);
     border-radius: 12px;
     padding: 10px 20px;
-    font-weight: 700;
-    font-size: 0.9rem;
+    font-weight: 700; font-size: 0.9rem;
     z-index: 200;
     opacity: 0;
     transition: opacity .3s;
@@ -320,10 +356,8 @@
   }
   #notif.show { opacity: 1; }
 
-  /* ─── Misc ─── */
+  /* Misc */
   .mt { margin-top: 12px; }
-  .mt2 { margin-top: 20px; }
-  .flex-gap { display: flex; gap: 10px; }
   .mode-toggle { display: flex; gap: 0; border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; width: 100%; margin-bottom: 18px; }
   .mode-btn {
     flex: 1; padding: 10px; text-align: center;
@@ -367,13 +401,12 @@
   }
 
   h3 { font-family: 'Fredoka One', cursive; font-size: 1.3rem; margin-bottom: 16px; text-align: center; }
-  .small-muted { font-size: 0.8rem; color: var(--muted); text-align: center; margin-top: 6px; }
   .error-text { color: var(--p1); font-size: 0.82rem; font-weight: 700; margin-top: 4px; }
-
   .spinner {
     width: 20px; height: 20px; border: 3px solid rgba(255,255,255,.2);
     border-top-color: var(--gold); border-radius: 50%;
     animation: spin .7s linear infinite; display: inline-block;
+    vertical-align: middle;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -381,24 +414,21 @@
 <body>
 <div id="app">
 
-  <!-- ══════════════════════ HOME ══════════════════════ -->
+  <!-- HOME -->
   <div id="home-screen" class="screen active">
     <div class="logo">CodeCrack 🔐</div>
     <div class="tagline">This game was made for the beloved one Mira. 🫀</div>
-
     <div class="card">
       <div class="mode-toggle">
         <button class="mode-btn active" id="btn-create" onclick="showTab('create')">🏠 Create Room</button>
         <button class="mode-btn" id="btn-join" onclick="showTab('join')">🚪 Join Room</button>
       </div>
 
-      <!-- Create tab -->
       <div id="tab-create">
         <div class="field">
           <label>Your Username</label>
           <input type="text" id="create-username" placeholder="Enter your name" maxlength="16">
         </div>
-
         <div class="field">
           <label>Difficulty</label>
           <div class="difficulty-cards">
@@ -414,7 +444,6 @@
             </div>
           </div>
         </div>
-
         <div class="field">
           <label>Best of...</label>
           <div class="rounds-select">
@@ -424,11 +453,9 @@
             <div class="round-opt" onclick="selectRounds(7)">7</div>
           </div>
         </div>
-
         <button class="btn btn-primary" onclick="createRoom()">Create Room 🚀</button>
       </div>
 
-      <!-- Join tab -->
       <div id="tab-join" style="display:none">
         <div class="field">
           <label>Your Username</label>
@@ -444,7 +471,7 @@
     </div>
   </div>
 
-  <!-- ══════════════════════ WAITING ══════════════════════ -->
+  <!-- WAITING -->
   <div id="waiting-screen" class="screen">
     <div class="logo" style="font-size:2rem;">Waiting for opponent...</div>
     <div class="card" style="margin-top:20px;text-align:center;">
@@ -457,73 +484,73 @@
     </div>
   </div>
 
-  <!-- ══════════════════════ SET CODE ══════════════════════ -->
+  <!-- SET CODE -->
   <div id="setcode-screen" class="screen">
     <div class="logo" style="font-size:2rem;">Set Your Secret Code 🔒</div>
     <div class="card" style="margin-top:20px;text-align:center;">
       <div id="opponent-reveal" style="font-size:0.9rem;color:var(--muted);margin-bottom:16px;font-weight:700;"></div>
       <p style="color:var(--muted);margin-bottom:6px;font-size:0.9rem;">Choose any 4 digits (repeats allowed)</p>
       <div class="digit-row">
-        <input class="digit-box" type="text" maxlength="1" inputmode="numeric" id="sc0" onInput="scInput(this,0)">
-        <input class="digit-box" type="text" maxlength="1" inputmode="numeric" id="sc1" onInput="scInput(this,1)">
-        <input class="digit-box" type="text" maxlength="1" inputmode="numeric" id="sc2" onInput="scInput(this,2)">
-        <input class="digit-box" type="text" maxlength="1" inputmode="numeric" id="sc3" onInput="scInput(this,3)">
+        <input class="digit-box" type="text" maxlength="1" inputmode="numeric" id="sc0" onInput="scInput(this,0)" onKeydown="scKeydown(event,0)">
+        <input class="digit-box" type="text" maxlength="1" inputmode="numeric" id="sc1" onInput="scInput(this,1)" onKeydown="scKeydown(event,1)">
+        <input class="digit-box" type="text" maxlength="1" inputmode="numeric" id="sc2" onInput="scInput(this,2)" onKeydown="scKeydown(event,2)">
+        <input class="digit-box" type="text" maxlength="1" inputmode="numeric" id="sc3" onInput="scInput(this,3)" onKeydown="scKeydown(event,3)">
       </div>
       <div id="setcode-error" class="error-text" style="display:none;margin-bottom:8px;"></div>
       <button class="btn btn-gold" onclick="submitSecretCode()">Lock It In 🔒</button>
       <div id="setcode-waiting" style="display:none;margin-top:14px;">
-        <div class="spinner"></div>
+        <span class="spinner"></span>
         <span style="color:var(--muted);font-size:0.9rem;margin-left:8px;">Waiting for opponent to set their code...</span>
       </div>
     </div>
   </div>
 
-  <!-- ══════════════════════ GAME ══════════════════════ -->
+  <!-- GAME -->
   <div id="game-screen" class="screen">
-    <!-- Status bar -->
-    <div class="status-bar" id="status-bar" style="margin-bottom:12px;max-width:900px;width:100%">
+    <div class="status-bar" id="status-bar">
       <div class="score-pills">
         <div class="score-pill sp1" id="score-p1">P1: 0</div>
         <div class="score-pill sp2" id="score-p2">P2: 0</div>
       </div>
       <div class="turn-indicator" id="round-indicator">Round 1</div>
-      <div style="display:flex;gap:10px;align-items:center;">
-        <div class="legend">
-          <div class="legend-item" id="legend-correct"><div class="legend-dot ld-correct"></div> Right spot</div>
-          <div class="legend-item" id="legend-present"><div class="legend-dot ld-present"></div> Wrong spot</div>
-          <div class="legend-item"><div class="legend-dot ld-absent"></div> Not in code</div>
-        </div>
+      <div class="turn-indicator" id="turn-indicator-bar">...</div>
+      <div class="legend">
+        <div class="legend-item" id="legend-correct"><div class="legend-dot ld-correct"></div> Right spot</div>
+        <div class="legend-item" id="legend-present"><div class="legend-dot ld-present"></div> Wrong spot</div>
+        <div class="legend-item"><div class="legend-dot ld-absent"></div> Not in code</div>
       </div>
     </div>
 
     <div class="game-layout">
-      <!-- Player 1 panel -->
-      <div class="player-panel p1-panel">
+      <!-- P1 panel -->
+      <div class="player-panel p1-panel" id="panel-p1">
         <div class="panel-header">
-          <div>
+          <div style="display:flex;align-items:center;gap:6px;position:relative;">
             <span class="player-name-tag p1-tag" id="p1-name-tag">Player 1</span>
             <span class="you-badge" id="p1-you-badge" style="display:none">YOU</span>
+            <!-- peek popup injected here by JS -->
           </div>
           <div class="guess-count" id="p1-guess-count">0 guesses</div>
         </div>
         <div class="guess-history" id="p1-history"></div>
         <div id="p1-solved" style="display:none" class="solved-banner">✅ CRACKED IT!</div>
+        <div id="p1-wait-banner" class="turn-wait-banner">⏳ Opponent is guessing...</div>
         <div id="p1-input-area" class="guess-input-area" style="display:none">
-          <div class="input-label">Your Guess</div>
-          <div class="guess-digit-row">
-            <input class="guess-box" type="text" maxlength="1" inputmode="numeric" id="g0" onInput="guessInput(this,0)">
-            <input class="guess-box" type="text" maxlength="1" inputmode="numeric" id="g1" onInput="guessInput(this,1)">
-            <input class="guess-box" type="text" maxlength="1" inputmode="numeric" id="g2" onInput="guessInput(this,2)">
-            <input class="guess-box" type="text" maxlength="1" inputmode="numeric" id="g3" onInput="guessInput(this,3)">
+          <div class="input-label">Your Guess — It's Your Turn! 🎯</div>
+          <div class="guess-digit-row" id="p1-guess-row">
+            <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
+            <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
+            <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
+            <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
           </div>
           <button class="btn btn-primary btn-sm" onclick="submitGuess()" style="width:100%">Guess! 🎯</button>
         </div>
       </div>
 
-      <!-- Player 2 panel -->
-      <div class="player-panel p2-panel">
+      <!-- P2 panel -->
+      <div class="player-panel p2-panel" id="panel-p2">
         <div class="panel-header">
-          <div>
+          <div style="display:flex;align-items:center;gap:6px;position:relative;">
             <span class="player-name-tag p2-tag" id="p2-name-tag">Player 2</span>
             <span class="you-badge" id="p2-you-badge" style="display:none">YOU</span>
           </div>
@@ -531,23 +558,23 @@
         </div>
         <div class="guess-history" id="p2-history"></div>
         <div id="p2-solved" style="display:none" class="solved-banner">✅ CRACKED IT!</div>
+        <div id="p2-wait-banner" class="turn-wait-banner">⏳ Opponent is guessing...</div>
         <div id="p2-input-area" class="guess-input-area" style="display:none">
-          <div class="input-label">Your Guess</div>
-          <div class="guess-digit-row">
-            <input class="guess-box" type="text" maxlength="1" inputmode="numeric" id="g0" onInput="guessInput(this,0)">
-            <input class="guess-box" type="text" maxlength="1" inputmode="numeric" id="g1" onInput="guessInput(this,1)">
-            <input class="guess-box" type="text" maxlength="1" inputmode="numeric" id="g2" onInput="guessInput(this,2)">
-            <input class="guess-box" type="text" maxlength="1" inputmode="numeric" id="g3" onInput="guessInput(this,3)">
+          <div class="input-label">Your Guess — It's Your Turn! 🎯</div>
+          <div class="guess-digit-row" id="p2-guess-row">
+            <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
+            <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
+            <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
+            <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
           </div>
           <button class="btn btn-secondary btn-sm" onclick="submitGuess()" style="width:100%">Guess! 🎯</button>
         </div>
       </div>
     </div>
   </div>
-
 </div>
 
-<!-- ══════════════════════ RESULT OVERLAY ══════════════════════ -->
+<!-- RESULT OVERLAY -->
 <div class="overlay" id="result-overlay">
   <div class="result-card">
     <div class="result-emoji" id="result-emoji">🏆</div>
@@ -561,27 +588,25 @@
   </div>
 </div>
 
-<!-- Notification toast -->
 <div id="notif"></div>
-
 
 <script src="https://unpkg.com/peerjs@1.5.5/dist/peerjs.min.js"></script>
 <script>
+// ═══════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════
 let state = {
-  roomCode: '',
-  role: '',
-  myName: '',
-  opponentName: '',
-  difficulty: 'easy',
-  bestOf: 1,
-  round: 1,
+  roomCode: '', role: '', myName: '', opponentName: '',
+  difficulty: 'easy', bestOf: 1, round: 1,
   scores: { host: 0, guest: 0 },
-  myCode: '',
-  opponentCode: '',
-  myGuesses: [],
-  opponentGuesses: [],
-  mySolved: false,
-  opponentSolved: false,
+  myCode: '', opponentCode: '',
+  myGuesses: [], opponentGuesses: [],
+  mySolved: false, opponentSolved: false,
+  // TURN TRACKING:
+  // whosTurn: 'host' | 'guest'  — whose turn it is to guess
+  // Turns alternate: after a player submits a guess, it becomes the other player's turn.
+  // A player who has already solved their code sits out (their solved status ends their guessing).
+  whosTurn: 'host',
   phase: 'home'
 };
 
@@ -593,18 +618,19 @@ let hostGame = null;
 let peerReady = false;
 const PEER_PREFIX = 'codecrack-';
 
+// ═══════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
 }
-
 function showTab(tab) {
   document.getElementById('tab-create').style.display = tab === 'create' ? 'block' : 'none';
-  document.getElementById('tab-join').style.display = tab === 'join' ? 'block' : 'none';
+  document.getElementById('tab-join').style.display   = tab === 'join'   ? 'block' : 'none';
   document.getElementById('btn-create').classList.toggle('active', tab === 'create');
   document.getElementById('btn-join').classList.toggle('active', tab === 'join');
 }
-
 function selectDiff(d) {
   selectedDiff = d;
   document.getElementById('diff-easy').classList.toggle('selected', d === 'easy');
@@ -612,39 +638,61 @@ function selectDiff(d) {
   document.getElementById('legend-correct').style.display = d === 'easy' ? 'flex' : 'none';
   document.getElementById('legend-present').style.display = d === 'easy' ? 'flex' : 'none';
 }
-
 function selectRounds(n) {
   selectedRounds = n;
   document.querySelectorAll('.round-opt').forEach(el => {
     el.classList.toggle('selected', Number(el.textContent) === n);
   });
 }
-
 function notify(msg, dur = 2500) {
   const el = document.getElementById('notif');
   el.textContent = msg;
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), dur);
 }
-
 function genCode() {
   return Array.from({ length: 6 }, () => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]).join('');
 }
+function normalizeCode(v) { return v.replace(/[^A-Za-z0-9]/g, '').toUpperCase(); }
+function getPeerId(code) { return PEER_PREFIX + normalizeCode(code).toLowerCase(); }
 
-function normalizeCode(value) {
-  return value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+// ═══════════════════════════════════════════
+//  PEEK — tap name to flash your secret code
+// ═══════════════════════════════════════════
+let peekTimer = null;
+
+function setupPeek(panelNum) {
+  const nameTag = document.getElementById(`p${panelNum}-name-tag`);
+  nameTag.classList.add('peekable');
+  nameTag.addEventListener('click', () => {
+    // Remove any existing popup
+    const existing = nameTag.parentElement.querySelector('.peek-popup');
+    if (existing) existing.remove();
+    if (peekTimer) clearTimeout(peekTimer);
+
+    const popup = document.createElement('div');
+    popup.className = 'peek-popup';
+    popup.innerHTML = `
+      <div class="peek-label">🔒 Your Secret Code</div>
+      <div class="peek-digits">${state.myCode.split('').join(' ')}</div>
+    `;
+    nameTag.parentElement.appendChild(popup);
+
+    peekTimer = setTimeout(() => {
+      popup.style.transition = 'opacity .3s';
+      popup.style.opacity = '0';
+      setTimeout(() => popup.remove(), 320);
+    }, 2000);
+  });
 }
 
-function getPeerId(code) {
-  return PEER_PREFIX + normalizeCode(code).toLowerCase();
-}
-
+// ═══════════════════════════════════════════
+//  PEER / NETWORK
+// ═══════════════════════════════════════════
 function destroyPeer() {
   try { if (conn) conn.close(); } catch (_) {}
   try { if (peer) peer.destroy(); } catch (_) {}
-  conn = null;
-  peer = null;
-  peerReady = false;
+  conn = null; peer = null; peerReady = false;
 }
 
 function resetUiForNewSession() {
@@ -652,45 +700,39 @@ function resetUiForNewSession() {
   document.getElementById('setcode-error').style.display = 'none';
   document.getElementById('setcode-waiting').style.display = 'none';
   document.getElementById('result-overlay').classList.remove('active');
-  document.getElementById('waiting-code').style.fontSize = '';
-  document.getElementById('waiting-code').style.letterSpacing = '';
   [0,1,2,3].forEach(i => {
     const a = document.getElementById(`sc${i}`);
     if (a) { a.value = ''; a.classList.remove('filled'); }
   });
   document.querySelectorAll('.guess-box').forEach(el => el.value = '');
-  document.getElementById('p1-history').innerHTML = '';
-  document.getElementById('p2-history').innerHTML = '';
-  document.getElementById('p1-guess-count').textContent = '0 guesses';
-  document.getElementById('p2-guess-count').textContent = '0 guesses';
-  document.getElementById('p1-you-badge').style.display = 'none';
-  document.getElementById('p2-you-badge').style.display = 'none';
-  document.getElementById('p1-input-area').style.display = 'none';
-  document.getElementById('p2-input-area').style.display = 'none';
-  document.getElementById('p1-solved').style.display = 'none';
-  document.getElementById('p2-solved').style.display = 'none';
+  ['p1','p2'].forEach(p => {
+    document.getElementById(`${p}-history`).innerHTML = '';
+    document.getElementById(`${p}-guess-count`).textContent = '0 guesses';
+    document.getElementById(`${p}-you-badge`).style.display = 'none';
+    document.getElementById(`${p}-input-area`).style.display = 'none';
+    document.getElementById(`${p}-wait-banner`).style.display = 'none';
+    document.getElementById(`${p}-solved`).style.display = 'none';
+    // Remove peekable from name tags
+    document.getElementById(`${p}-name-tag`).classList.remove('peekable');
+    // Remove any old peek listeners (clone trick)
+    const old = document.getElementById(`${p}-name-tag`);
+    const fresh = old.cloneNode(true);
+    old.parentElement.replaceChild(fresh, old);
+  });
 }
 
 function createPeer(id = undefined) {
   return new Promise((resolve, reject) => {
     const p = id ? new Peer(id) : new Peer();
     let settled = false;
-
     p.on('open', () => {
-      settled = true;
-      peer = p;
-      peerReady = true;
+      settled = true; peer = p; peerReady = true;
       attachPeerCommonEvents();
       resolve(p);
     });
-
     p.on('error', err => {
-      if (!settled) {
-        try { p.destroy(); } catch (_) {}
-        reject(err);
-      } else {
-        handlePeerError(err);
-      }
+      if (!settled) { try { p.destroy(); } catch (_) {} reject(err); }
+      else handlePeerError(err);
     });
   });
 }
@@ -698,39 +740,27 @@ function createPeer(id = undefined) {
 function attachPeerCommonEvents() {
   if (!peer) return;
   peer.on('connection', incoming => {
-    if (state.role !== 'host') {
-      incoming.close();
-      return;
-    }
-    if (conn && conn.open) {
-      incoming.close();
-      notify('⚠️ Room already has 2 players');
-      return;
-    }
+    if (state.role !== 'host') { incoming.close(); return; }
+    if (conn && conn.open) { incoming.close(); notify('⚠️ Room already has 2 players'); return; }
     setupConnection(incoming, 'host');
   });
 }
 
 function setupConnection(connection, mode) {
   conn = connection;
-
   connection.on('open', () => {
-    if (mode === 'guest') {
-      connection.send({ type: 'join', name: state.myName });
-    }
+    if (mode === 'guest') connection.send({ type: 'join', name: state.myName });
   });
-
   connection.on('data', payload => {
     if (mode === 'host') handleHostMessage(payload);
     else handleGuestMessage(payload);
   });
-
   connection.on('close', () => {
     if (state.phase !== 'home') notify('🔌 Connection closed');
     if (state.role === 'host' && hostGame) {
       hostGame.phase = 'waiting';
       hostGame.guest = { name: '', code: '', guesses: [], solved: false, ready: false };
-      hostGame.roundWinner = '';
+      hostGame.whosTurn = 'host';
       updateHostStateFromGame();
       renderFromState();
       showScreen('waiting-screen');
@@ -738,24 +768,23 @@ function setupConnection(connection, mode) {
       conn = null;
     }
   });
-
   connection.on('error', err => handlePeerError(err));
 }
 
 function handlePeerError(err) {
-  const msg = (err && err.type) || (err && err.message) || 'connection error';
+  const msg = (err && err.type) || (err && err.message) || '';
   console.error(err);
-  if (String(msg).includes('unavailable-id')) {
-    notify('⚠️ That room code is busy. Try creating again.');
-  } else {
-    notify('❌ Connection problem. Try again.');
-  }
+  if (String(msg).includes('unavailable-id')) notify('⚠️ Room code busy. Try creating again.');
+  else notify('❌ Connection problem. Try again.');
 }
 
 function sendToOther(payload) {
   if (conn && conn.open) conn.send(payload);
 }
 
+// ═══════════════════════════════════════════
+//  GAME STATE HELPERS
+// ═══════════════════════════════════════════
 function createFreshGame() {
   return {
     roomCode: state.roomCode,
@@ -765,6 +794,7 @@ function createFreshGame() {
     scores: { host: 0, guest: 0 },
     phase: 'waiting',
     roundWinner: '',
+    whosTurn: 'host',   // host always goes first each round
     host: { name: state.myName, code: '', guesses: [], solved: false, ready: false },
     guest: { name: '', code: '', guesses: [], solved: false, ready: false }
   };
@@ -772,35 +802,37 @@ function createFreshGame() {
 
 function updateHostStateFromGame() {
   if (!hostGame) return;
-  const otherRole = state.role === 'host' ? 'guest' : 'host';
-  state.difficulty = hostGame.difficulty;
-  state.bestOf = hostGame.bestOf;
-  state.round = hostGame.round;
-  state.scores = { ...hostGame.scores };
-  state.phase = hostGame.phase;
-  state.opponentName = hostGame[otherRole].name || '';
-  state.myCode = hostGame[state.role].code || '';
-  state.opponentCode = hostGame[otherRole].code || '';
-  state.myGuesses = [...(hostGame[state.role].guesses || [])];
-  state.opponentGuesses = [...(hostGame[otherRole].guesses || [])];
-  state.mySolved = !!hostGame[state.role].solved;
-  state.opponentSolved = !!hostGame[otherRole].solved;
+  const other = state.role === 'host' ? 'guest' : 'host';
+  state.difficulty    = hostGame.difficulty;
+  state.bestOf        = hostGame.bestOf;
+  state.round         = hostGame.round;
+  state.scores        = { ...hostGame.scores };
+  state.phase         = hostGame.phase;
+  state.whosTurn      = hostGame.whosTurn;
+  state.opponentName  = hostGame[other].name || '';
+  state.myCode        = hostGame[state.role].code || '';
+  state.opponentCode  = hostGame[other].code || '';
+  state.myGuesses     = [...(hostGame[state.role].guesses || [])];
+  state.opponentGuesses = [...(hostGame[other].guesses || [])];
+  state.mySolved      = !!hostGame[state.role].solved;
+  state.opponentSolved = !!hostGame[other].solved;
 }
 
 function syncGuestState(game) {
-  const otherRole = state.role === 'host' ? 'guest' : 'host';
-  state.difficulty = game.difficulty;
-  state.bestOf = game.bestOf;
-  state.round = game.round;
-  state.scores = { ...game.scores };
-  state.phase = game.phase;
-  state.opponentName = game[otherRole].name || '';
-  state.myCode = game[state.role].code || '';
-  state.opponentCode = game[otherRole].code || '';
-  state.myGuesses = [...(game[state.role].guesses || [])];
-  state.opponentGuesses = [...(game[otherRole].guesses || [])];
-  state.mySolved = !!game[state.role].solved;
-  state.opponentSolved = !!game[otherRole].solved;
+  const other = state.role === 'host' ? 'guest' : 'host';
+  state.difficulty    = game.difficulty;
+  state.bestOf        = game.bestOf;
+  state.round         = game.round;
+  state.scores        = { ...game.scores };
+  state.phase         = game.phase;
+  state.whosTurn      = game.whosTurn;
+  state.opponentName  = game[other].name || '';
+  state.myCode        = game[state.role].code || '';
+  state.opponentCode  = game[other].code || '';
+  state.myGuesses     = [...(game[state.role].guesses || [])];
+  state.opponentGuesses = [...(game[other].guesses || [])];
+  state.mySolved      = !!game[state.role].solved;
+  state.opponentSolved = !!game[other].solved;
 }
 
 function broadcastState() {
@@ -810,24 +842,20 @@ function broadcastState() {
   sendToOther({ type: 'state', game: hostGame });
 }
 
+// ═══════════════════════════════════════════
+//  ROOM MANAGEMENT
+// ═══════════════════════════════════════════
 async function createRoom() {
   const name = document.getElementById('create-username').value.trim();
   if (!name) return notify('⚠️ Enter a username!');
-
-  destroyPeer();
-  resetUiForNewSession();
-
-  state.role = 'host';
-  state.myName = name;
-  state.opponentName = '';
-  state.difficulty = selectedDiff;
-  state.bestOf = selectedRounds;
+  destroyPeer(); resetUiForNewSession();
+  state.role = 'host'; state.myName = name;
+  state.difficulty = selectedDiff; state.bestOf = selectedRounds;
   state.phase = 'waiting';
 
   let tries = 0;
   while (tries < 5) {
-    const roomCode = genCode();
-    tries += 1;
+    const roomCode = genCode(); tries++;
     try {
       await createPeer(getPeerId(roomCode));
       state.roomCode = roomCode;
@@ -835,14 +863,13 @@ async function createRoom() {
       updateHostStateFromGame();
       document.getElementById('waiting-code').textContent = roomCode;
       showScreen('waiting-screen');
-      notify('✅ Room created! Send the code to your friend.');
+      notify('✅ Room created! Share the code.');
       return;
     } catch (err) {
       const type = (err && err.type) || '';
       if (!String(type).includes('unavailable-id') && tries >= 1) break;
     }
   }
-
   showScreen('home-screen');
   notify('❌ Could not create room. Try again.');
 }
@@ -852,43 +879,44 @@ async function joinRoom() {
   const code = normalizeCode(document.getElementById('join-code').value);
   const errEl = document.getElementById('join-error');
   errEl.style.display = 'none';
-
   if (!name) return notify('⚠️ Enter a username!');
-  if (code.length !== 6) {
-    errEl.textContent = 'Code must be 6 characters';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  destroyPeer();
-  resetUiForNewSession();
-
-  state.role = 'guest';
-  state.myName = name;
-  state.roomCode = code;
-  state.phase = 'joining';
-
+  if (code.length !== 6) { errEl.textContent = 'Code must be 6 characters'; errEl.style.display = 'block'; return; }
+  destroyPeer(); resetUiForNewSession();
+  state.role = 'guest'; state.myName = name; state.roomCode = code; state.phase = 'joining';
   try {
     await createPeer();
     const connection = peer.connect(getPeerId(code), { reliable: true, metadata: { name } });
     setupConnection(connection, 'guest');
-    errEl.textContent = 'Connecting...';
-    errEl.style.display = 'block';
+    errEl.textContent = 'Connecting...'; errEl.style.display = 'block';
   } catch (err) {
-    errEl.textContent = 'Could not start connection. Try again.';
-    errEl.style.display = 'block';
+    errEl.textContent = 'Could not start connection. Try again.'; errEl.style.display = 'block';
   }
 }
 
+function copyRoomCode() {
+  if (!state.roomCode) return;
+  navigator.clipboard.writeText(state.roomCode)
+    .then(() => notify('✅ Room code copied!'))
+    .catch(() => notify('⚠️ Could not copy'));
+}
+
+function cancelRoom() {
+  destroyPeer(); hostGame = null;
+  Object.assign(state, { roomCode:'', role:'', myName:'', opponentName:'', phase:'home' });
+  resetUiForNewSession(); showScreen('home-screen');
+}
+
+// ═══════════════════════════════════════════
+//  MESSAGE HANDLERS
+// ═══════════════════════════════════════════
 function handleHostMessage(payload) {
-  if (!hostGame || !payload || typeof payload !== 'object') return;
+  if (!hostGame || !payload) return;
 
   if (payload.type === 'join') {
     hostGame.guest.name = payload.name || 'Guest';
     hostGame.phase = 'setcode';
     updateHostStateFromGame();
     document.getElementById('opponent-reveal').textContent = `🕹️ You're playing against ${hostGame.guest.name}!`;
-    document.getElementById('setcode-waiting').style.display = 'none';
     showScreen('setcode-screen');
     broadcastState();
     return;
@@ -903,27 +931,23 @@ function handleHostMessage(payload) {
   }
 
   if (payload.type === 'guess') {
-    processGuess('guest', payload.guess);
-    return;
-  }
-
-  if (payload.type === 'nextRound') {
-    if (hostGame.phase === 'roundend') {
-      resetForNextRound();
-      broadcastState();
+    // Only process if it's actually the guest's turn
+    if (hostGame.whosTurn === 'guest') {
+      processGuess('guest', payload.guess);
     }
     return;
   }
 
-  if (payload.type === 'newGame') {
-    startFreshMatch();
-    broadcastState();
+  if (payload.type === 'nextRound') {
+    if (hostGame.phase === 'roundend') { resetForNextRound(); broadcastState(); }
+    return;
   }
+
+  if (payload.type === 'newGame') { startFreshMatch(); broadcastState(); }
 }
 
 function handleGuestMessage(payload) {
-  if (!payload || typeof payload !== 'object') return;
-
+  if (!payload) return;
   if (payload.type === 'state') {
     document.getElementById('join-error').style.display = 'none';
     syncGuestState(payload.game);
@@ -934,17 +958,38 @@ function handleGuestMessage(payload) {
 function maybeStartRound() {
   if (hostGame.host.ready && hostGame.guest.ready) {
     hostGame.phase = 'playing';
+    hostGame.whosTurn = 'host'; // host always starts
   }
 }
 
+// ═══════════════════════════════════════════
+//  SET CODE INPUTS (with backspace nav)
+// ═══════════════════════════════════════════
 function scInput(el, idx) {
   el.value = el.value.replace(/[^0-9]/g, '').slice(-1);
   el.classList.toggle('filled', el.value !== '');
   if (el.value && idx < 3) document.getElementById(`sc${idx + 1}`).focus();
 }
 
+function scKeydown(event, idx) {
+  if (event.key === 'Backspace') {
+    const el = document.getElementById(`sc${idx}`);
+    if (el.value !== '') {
+      el.value = '';
+      el.classList.remove('filled');
+      event.preventDefault();
+    } else if (idx > 0) {
+      event.preventDefault();
+      const prev = document.getElementById(`sc${idx - 1}`);
+      prev.value = '';
+      prev.classList.remove('filled');
+      prev.focus();
+    }
+  }
+}
+
 function submitSecretCode() {
-  const digits = [0, 1, 2, 3].map(i => document.getElementById(`sc${i}`).value);
+  const digits = [0,1,2,3].map(i => document.getElementById(`sc${i}`).value);
   if (digits.some(d => d === '')) {
     document.getElementById('setcode-error').textContent = 'Fill in all 4 digits!';
     document.getElementById('setcode-error').style.display = 'block';
@@ -967,15 +1012,47 @@ function submitSecretCode() {
   notify('✅ Code locked!');
 }
 
-function getActiveGuessInputs() {
-  const visibleArea = Array.from(document.querySelectorAll('.guess-input-area')).find(el => getComputedStyle(el).display !== 'none');
-  return visibleArea ? Array.from(visibleArea.querySelectorAll('.guess-box')) : [];
+// ═══════════════════════════════════════════
+//  GUESS INPUTS (with backspace nav)
+// ═══════════════════════════════════════════
+function setupGuessInputs(rowId) {
+  const row = document.getElementById(rowId);
+  if (!row) return;
+  const inputs = Array.from(row.querySelectorAll('.guess-box'));
+
+  inputs.forEach((inp, idx) => {
+    // Remove old listeners
+    const fresh = inp.cloneNode(true);
+    inp.parentElement.replaceChild(fresh, inp);
+  });
+
+  // Re-query after clone
+  const freshInputs = Array.from(row.querySelectorAll('.guess-box'));
+  freshInputs.forEach((inp, idx) => {
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); submitGuess(); return; }
+      if (e.key === 'Backspace') {
+        if (inp.value !== '') {
+          inp.value = '';
+          e.preventDefault();
+        } else if (idx > 0) {
+          e.preventDefault();
+          freshInputs[idx - 1].value = '';
+          freshInputs[idx - 1].focus();
+        }
+      }
+    });
+    inp.addEventListener('input', () => {
+      inp.value = inp.value.replace(/[^0-9]/g, '').slice(-1);
+      if (inp.value && idx < freshInputs.length - 1) freshInputs[idx + 1].focus();
+    });
+  });
 }
 
-function guessInput(el, idx) {
-  el.value = el.value.replace(/[^0-9]/g, '').slice(-1);
-  const inputs = Array.from(el.parentElement.querySelectorAll('.guess-box'));
-  if (el.value && idx < inputs.length - 1) inputs[idx + 1].focus();
+function getActiveGuessInputs() {
+  const visibleArea = Array.from(document.querySelectorAll('.guess-input-area'))
+    .find(el => el.style.display !== 'none' && getComputedStyle(el).display !== 'none');
+  return visibleArea ? Array.from(visibleArea.querySelectorAll('.guess-box')) : [];
 }
 
 function submitGuess() {
@@ -984,6 +1061,9 @@ function submitGuess() {
   const digits = inputs.map(i => i.value);
   if (digits.some(d => d === '')) return notify('⚠️ Fill in all 4 digits!');
   const guess = digits.join('');
+
+  // Check it's actually my turn
+  if (state.whosTurn !== state.role) return notify('⏳ Wait for your turn!');
 
   if (state.role === 'host') {
     processGuess('host', guess);
@@ -996,40 +1076,37 @@ function submitGuess() {
   if (inputs[0]) inputs[0].focus();
 }
 
+// ═══════════════════════════════════════════
+//  GUESS EVALUATION & PROCESSING
+// ═══════════════════════════════════════════
 function evaluateGuess(guess, code, difficulty) {
   const result = [0, 0, 0, 0];
-  const codeArr = code.split('');
+  const codeArr  = code.split('');
   const guessArr = guess.split('');
-  const codeUsed = [false, false, false, false];
-  const guessUsed = [false, false, false, false];
+  const codeUsed  = [false,false,false,false];
+  const guessUsed = [false,false,false,false];
 
   for (let i = 0; i < 4; i++) {
     if (guessArr[i] === codeArr[i]) {
-      result[i] = 2;
-      codeUsed[i] = true;
-      guessUsed[i] = true;
+      result[i] = 2; codeUsed[i] = true; guessUsed[i] = true;
     }
   }
-
   if (difficulty === 'easy') {
     for (let i = 0; i < 4; i++) {
       if (guessUsed[i]) continue;
       for (let j = 0; j < 4; j++) {
         if (codeUsed[j]) continue;
-        if (guessArr[i] === codeArr[j]) {
-          result[i] = 1;
-          codeUsed[j] = true;
-          break;
-        }
+        if (guessArr[i] === codeArr[j]) { result[i] = 1; codeUsed[j] = true; break; }
       }
     }
   }
-
   return result;
 }
 
 function processGuess(role, guess) {
   if (!hostGame || hostGame.phase !== 'playing') return;
+  if (hostGame.whosTurn !== role) return; // safety guard
+
   const otherRole = role === 'host' ? 'guest' : 'host';
   const code = hostGame[otherRole].code;
   const result = evaluateGuess(guess, code, hostGame.difficulty);
@@ -1038,49 +1115,53 @@ function processGuess(role, guess) {
   hostGame[role].guesses.push({ guess, result });
   if (solved) hostGame[role].solved = true;
 
+  // Check if BOTH players have now solved (round over)
   if (hostGame.host.solved && hostGame.guest.solved) {
-    const hostCount = hostGame.host.guesses.length;
+    const hostCount  = hostGame.host.guesses.length;
     const guestCount = hostGame.guest.guesses.length;
 
-    if (hostCount < guestCount) {
-      hostGame.scores.host += 1;
-      hostGame.roundWinner = 'host';
-    } else if (guestCount < hostCount) {
-      hostGame.scores.guest += 1;
-      hostGame.roundWinner = 'guest';
-    } else {
-      hostGame.scores.host += 1;
-      hostGame.scores.guest += 1;
-      hostGame.roundWinner = 'tie';
-    }
+    if (hostCount < guestCount)       { hostGame.scores.host++;  hostGame.roundWinner = 'host'; }
+    else if (guestCount < hostCount)  { hostGame.scores.guest++; hostGame.roundWinner = 'guest'; }
+    else                               { hostGame.scores.host++; hostGame.scores.guest++; hostGame.roundWinner = 'tie'; }
 
     const needed = Math.ceil(hostGame.bestOf / 2);
-    hostGame.phase = (hostGame.scores.host >= needed || hostGame.scores.guest >= needed) ? 'gameover' : 'roundend';
+    hostGame.phase = (hostGame.scores.host >= needed || hostGame.scores.guest >= needed)
+      ? 'gameover' : 'roundend';
+
+    // whosTurn doesn't matter once round ends, but reset for clarity
+    hostGame.whosTurn = 'host';
+
+  } else if (solved) {
+    // This player solved it — the other player still needs to guess,
+    // so pass the turn to them (and keep passing on each of THEIR guesses until they solve too).
+    hostGame.whosTurn = otherRole;
+  } else {
+    // Normal alternating: pass to the other player
+    hostGame.whosTurn = otherRole;
   }
 
   broadcastState();
 }
 
+// ═══════════════════════════════════════════
+//  RENDERING
+// ═══════════════════════════════════════════
 function renderFromState() {
   document.getElementById('legend-correct').style.display = state.difficulty === 'easy' ? 'flex' : 'none';
   document.getElementById('legend-present').style.display = state.difficulty === 'easy' ? 'flex' : 'none';
 
   if (state.phase === 'waiting') {
     document.getElementById('waiting-code').textContent = state.roomCode;
-    showScreen('waiting-screen');
-    return;
+    showScreen('waiting-screen'); return;
   }
-
   if (state.phase === 'setcode') {
     document.getElementById('opponent-reveal').textContent = state.opponentName
       ? `🕹️ You're playing against ${state.opponentName}!`
       : 'Waiting for opponent...';
     document.getElementById('setcode-waiting').style.display = state.myCode ? 'block' : 'none';
-    showScreen('setcode-screen');
-    return;
+    showScreen('setcode-screen'); return;
   }
-
-  if (state.phase === 'playing' || state.phase === 'roundend' || state.phase === 'gameover') {
+  if (['playing','roundend','gameover'].includes(state.phase)) {
     renderGameScreen();
     showScreen('game-screen');
     if (state.phase === 'roundend') showRoundResult();
@@ -1090,32 +1171,91 @@ function renderFromState() {
 
 function renderGameScreen() {
   const isHost = state.role === 'host';
-  const myPanel = isHost ? 1 : 2;
+  const myPanel    = isHost ? 1 : 2;
   const theirPanel = isHost ? 2 : 1;
 
-  document.getElementById(`p${myPanel}-name-tag`).textContent = state.myName || (isHost ? 'Host' : 'Guest');
+  // Names
+  document.getElementById(`p${myPanel}-name-tag`).textContent    = state.myName     || (isHost ? 'Host' : 'Guest');
   document.getElementById(`p${theirPanel}-name-tag`).textContent = state.opponentName || (isHost ? 'Guest' : 'Host');
-  document.getElementById(`p${myPanel}-you-badge`).style.display = 'inline';
+  document.getElementById(`p${myPanel}-you-badge`).style.display    = 'inline';
   document.getElementById(`p${theirPanel}-you-badge`).style.display = 'none';
 
-  document.getElementById(`p${myPanel}-input-area`).style.display = state.mySolved || state.phase !== 'playing' ? 'none' : 'block';
-  document.getElementById(`p${theirPanel}-input-area`).style.display = 'none';
-  document.getElementById(`p${myPanel}-solved`).style.display = state.mySolved ? 'block' : 'none';
-  document.getElementById(`p${theirPanel}-solved`).style.display = state.opponentSolved ? 'block' : 'none';
+  // Set up peek on MY name tag
+  setupPeek(myPanel);
 
-  renderHistory(`p${myPanel}-history`, `p${myPanel}-guess-count`, state.myGuesses);
+  // Turn logic
+  const isMyTurn = (state.whosTurn === state.role);
+  const myPanelEl    = document.getElementById(`panel-p${myPanel}`);
+  const theirPanelEl = document.getElementById(`panel-p${theirPanel}`);
+
+  myPanelEl.classList.toggle('active-turn', isMyTurn);
+  theirPanelEl.classList.remove('active-turn');
+
+  // Status bar turn indicator
+  const turnBarEl = document.getElementById('turn-indicator-bar');
+  if (state.phase === 'playing') {
+    if (isMyTurn) {
+      turnBarEl.textContent = '🎯 Your Turn!';
+      turnBarEl.className = 'turn-indicator my-turn';
+    } else {
+      turnBarEl.textContent = `⏳ ${state.opponentName || 'Opponent'}'s Turn`;
+      turnBarEl.className = 'turn-indicator their-turn';
+    }
+  } else {
+    turnBarEl.textContent = '';
+    turnBarEl.className = 'turn-indicator';
+  }
+
+  // Show/hide input areas vs wait banner
+  const myInputEl   = document.getElementById(`p${myPanel}-input-area`);
+  const myWaitEl    = document.getElementById(`p${myPanel}-wait-banner`);
+  const mySolvedEl  = document.getElementById(`p${myPanel}-solved`);
+  const theirWaitEl = document.getElementById(`p${theirPanel}-wait-banner`);
+  const theirSolved = document.getElementById(`p${theirPanel}-solved`);
+
+  if (state.mySolved) {
+    myInputEl.style.display  = 'none';
+    myWaitEl.style.display   = 'none';
+    mySolvedEl.style.display = 'block';
+  } else if (state.phase === 'playing') {
+    if (isMyTurn) {
+      myInputEl.style.display = 'block';
+      myWaitEl.style.display  = 'none';
+      // Set up guess input events
+      const rowId = `p${myPanel}-guess-row`;
+      setupGuessInputs(rowId);
+      // Focus first empty box
+      const inputs = document.getElementById(rowId).querySelectorAll('.guess-box');
+      if (inputs[0]) inputs[0].focus();
+    } else {
+      myInputEl.style.display = 'none';
+      myWaitEl.style.display  = 'block';
+    }
+    mySolvedEl.style.display = 'none';
+  } else {
+    myInputEl.style.display  = 'none';
+    myWaitEl.style.display   = 'none';
+    mySolvedEl.style.display = 'none';
+  }
+
+  // Opponent's panel — never shows input, may show wait banner or solved
+  document.getElementById(`p${theirPanel}-input-area`).style.display = 'none';
+  theirSolved.style.display  = state.opponentSolved ? 'block' : 'none';
+  // Show wait banner on opponent's side when it's their turn (and they're not solved)
+  theirWaitEl.style.display  = (!state.opponentSolved && !isMyTurn && state.phase === 'playing') ? 'block' : 'none';
+
+  // History
+  renderHistory(`p${myPanel}-history`,    `p${myPanel}-guess-count`,    state.myGuesses);
   renderHistory(`p${theirPanel}-history`, `p${theirPanel}-guess-count`, state.opponentGuesses);
 
+  // Scores & round
   document.getElementById('score-p1').textContent = `${isHost ? state.myName : state.opponentName || 'Host'}: ${state.scores.host}`;
   document.getElementById('score-p2').textContent = `${isHost ? state.opponentName || 'Guest' : state.myName}: ${state.scores.guest}`;
   document.getElementById('round-indicator').textContent = `Round ${state.round} / Best of ${state.bestOf}`;
-
-  const inputs = getActiveGuessInputs();
-  if (inputs.length && state.phase === 'playing' && !state.mySolved) inputs[0].focus();
 }
 
 function renderHistory(histId, countId, guesses) {
-  const el = document.getElementById(histId);
+  const el      = document.getElementById(histId);
   const countEl = document.getElementById(countId);
   countEl.textContent = `${guesses.length} guess${guesses.length !== 1 ? 'es' : ''}`;
   el.innerHTML = '';
@@ -1129,34 +1269,29 @@ function renderHistory(histId, countId, guesses) {
     numEl.textContent = i + 1;
     row.appendChild(numEl);
 
-    const hardRightSpotCount = g.result.filter(r => r === 2).length;
+    const hardRightCount = g.result.filter(r => r === 2).length;
 
     g.guess.split('').forEach((d, di) => {
       const cell = document.createElement('div');
       cell.className = 'guess-digit';
       const res = g.result[di];
-
       if (state.difficulty === 'hard') {
         cell.classList.add('neutral');
         cell.textContent = d;
       } else if (res === 2) {
-        cell.classList.add('correct');
-        cell.textContent = d;
+        cell.classList.add('correct'); cell.textContent = d;
       } else if (res === 1) {
-        cell.classList.add('present');
-        cell.textContent = d;
+        cell.classList.add('present'); cell.textContent = d;
       } else {
-        cell.classList.add('absent');
-        cell.textContent = d;
+        cell.classList.add('absent'); cell.textContent = d;
       }
-
       row.appendChild(cell);
     });
 
     if (state.difficulty === 'hard') {
       const badge = document.createElement('div');
       badge.className = 'hard-count-badge';
-      badge.textContent = `${hardRightSpotCount} right spot${hardRightSpotCount === 1 ? '' : 's'}`;
+      badge.textContent = `${hardRightCount} right spot${hardRightCount === 1 ? '' : 's'}`;
       row.appendChild(badge);
     }
 
@@ -1166,9 +1301,11 @@ function renderHistory(histId, countId, guesses) {
   el.scrollTop = el.scrollHeight;
 }
 
+// ═══════════════════════════════════════════
+//  ROUND / GAME RESULTS
+// ═══════════════════════════════════════════
 function showRoundResult() {
-  const overlay = document.getElementById('result-overlay');
-  const myCount = state.myGuesses.length;
+  const myCount    = state.myGuesses.length;
   const theirCount = state.opponentGuesses.length;
   const iWon = myCount < theirCount;
   const tied = myCount === theirCount;
@@ -1176,10 +1313,10 @@ function showRoundResult() {
   document.getElementById('result-emoji').textContent = tied ? '🤝' : (iWon ? '🎉' : '😅');
   document.getElementById('result-title').textContent = `Round ${state.round} Over!`;
   document.getElementById('result-sub').textContent = tied
-    ? `Tie round — both solved it in ${myCount} guesses.`
+    ? `Tie! Both cracked it in ${myCount} guesses.`
     : iWon
       ? `You cracked it in ${myCount} guesses — opponent took ${theirCount}!`
-      : `Opponent cracked it in ${theirCount} guesses — you took ${myCount}.`;
+      : `Opponent cracked it in ${theirCount} — you took ${myCount}.`;
 
   document.getElementById('result-codes').innerHTML = `
     <div class="result-code-item">
@@ -1191,23 +1328,21 @@ function showRoundResult() {
       <div class="result-code-val" style="color:var(--p2)">${state.opponentCode.split('').join(' ')}</div>
     </div>
   `;
-
   document.getElementById('result-next-btn').style.display = 'block';
-  document.getElementById('result-new-btn').style.display = 'block';
-  overlay.classList.add('active');
+  document.getElementById('result-new-btn').style.display  = 'block';
+  document.getElementById('result-overlay').classList.add('active');
 }
 
 function showGameOver() {
-  const overlay = document.getElementById('result-overlay');
-  const myScore = state.role === 'host' ? state.scores.host : state.scores.guest;
+  const myScore    = state.role === 'host' ? state.scores.host  : state.scores.guest;
   const theirScore = state.role === 'host' ? state.scores.guest : state.scores.host;
   const tied = myScore === theirScore;
   const iWon = myScore > theirScore;
 
   document.getElementById('result-emoji').textContent = tied ? '🤝' : (iWon ? '🏆' : '💔');
-  document.getElementById('result-title').textContent = tied ? `It's a Tie!` : (iWon ? 'You Win! 🏆' : `${state.opponentName} Wins!`);
-  document.getElementById('result-sub').textContent = `Final Score: ${state.myName} ${myScore} — ${state.opponentName} ${theirScore}`;
-  document.getElementById('result-codes').innerHTML = `
+  document.getElementById('result-title').textContent = tied ? `It's a Tie! 🤝` : (iWon ? 'You Win! 🏆' : `${state.opponentName} Wins!`);
+  document.getElementById('result-sub').textContent   = `Final Score: ${state.myName} ${myScore} — ${state.opponentName} ${theirScore}`;
+  document.getElementById('result-codes').innerHTML   = `
     <div class="result-code-item">
       <div class="result-code-label">Your Code</div>
       <div class="result-code-val" style="color:var(--p1)">${state.myCode.split('').join(' ')}</div>
@@ -1218,19 +1353,23 @@ function showGameOver() {
     </div>
   `;
   document.getElementById('result-next-btn').style.display = 'none';
-  document.getElementById('result-new-btn').style.display = 'block';
-  overlay.classList.add('active');
+  document.getElementById('result-new-btn').style.display  = 'block';
+  document.getElementById('result-overlay').classList.add('active');
 }
 
+// ═══════════════════════════════════════════
+//  ROUND / MATCH MANAGEMENT
+// ═══════════════════════════════════════════
 function resetForNextRound() {
   hostGame.round += 1;
-  hostGame.phase = 'setcode';
+  hostGame.phase  = 'setcode';
   hostGame.roundWinner = '';
-  ['host', 'guest'].forEach(role => {
-    hostGame[role].code = '';
+  hostGame.whosTurn    = 'host';
+  ['host','guest'].forEach(role => {
+    hostGame[role].code    = '';
     hostGame[role].guesses = [];
-    hostGame[role].solved = false;
-    hostGame[role].ready = false;
+    hostGame[role].solved  = false;
+    hostGame[role].ready   = false;
   });
   document.getElementById('result-overlay').classList.remove('active');
   [0,1,2,3].forEach(i => {
@@ -1240,7 +1379,7 @@ function resetForNextRound() {
 }
 
 function startFreshMatch() {
-  const hostName = hostGame ? hostGame.host.name : state.myName;
+  const hostName  = hostGame ? hostGame.host.name  : state.myName;
   const guestName = hostGame ? hostGame.guest.name : state.opponentName;
   hostGame = {
     roomCode: state.roomCode,
@@ -1250,7 +1389,8 @@ function startFreshMatch() {
     scores: { host: 0, guest: 0 },
     phase: 'setcode',
     roundWinner: '',
-    host: { name: hostName, code: '', guesses: [], solved: false, ready: false },
+    whosTurn: 'host',
+    host:  { name: hostName,  code: '', guesses: [], solved: false, ready: false },
     guest: { name: guestName, code: '', guesses: [], solved: false, ready: false }
   };
   resetUiForNewSession();
@@ -1269,48 +1409,28 @@ function nextRound() {
 function newGame() {
   document.getElementById('result-overlay').classList.remove('active');
   if (state.role === 'host') {
-    startFreshMatch();
-    broadcastState();
+    startFreshMatch(); broadcastState();
   } else if (state.role === 'guest') {
     sendToOther({ type: 'newGame' });
   } else {
     destroyPeer();
-    state = {
-      roomCode: '', role: '', myName: '', opponentName: '', difficulty: 'easy', bestOf: 1,
-      round: 1, scores: { host: 0, guest: 0 }, myCode: '', opponentCode: '',
-      myGuesses: [], opponentGuesses: [], mySolved: false, opponentSolved: false, phase: 'home'
-    };
+    Object.assign(state, {
+      roomCode:'', role:'', myName:'', opponentName:'', difficulty:'easy', bestOf:1,
+      round:1, scores:{host:0,guest:0}, myCode:'', opponentCode:'',
+      myGuesses:[], opponentGuesses:[], mySolved:false, opponentSolved:false,
+      whosTurn:'host', phase:'home'
+    });
     resetUiForNewSession();
     showScreen('home-screen');
   }
 }
 
-function copyRoomCode() {
-  if (!state.roomCode) return;
-  navigator.clipboard.writeText(state.roomCode)
-    .then(() => notify('✅ Room code copied!'))
-    .catch(() => notify('⚠️ Could not copy code'));
-}
-
-function cancelRoom() {
-  destroyPeer();
-  hostGame = null;
-  state = {
-    roomCode: '', role: '', myName: '', opponentName: '', difficulty: 'easy', bestOf: 1,
-    round: 1, scores: { host: 0, guest: 0 }, myCode: '', opponentCode: '',
-    myGuesses: [], opponentGuesses: [], mySolved: false, opponentSolved: false, phase: 'home'
-  };
-  resetUiForNewSession();
-  showScreen('home-screen');
-}
-
+// ═══════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════
 window.addEventListener('beforeunload', () => {
   try { if (conn && conn.open) conn.send({ type: 'leave' }); } catch (_) {}
   destroyPeer();
-});
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && document.getElementById('game-screen').classList.contains('active')) submitGuess();
 });
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -1324,6 +1444,5 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('legend-present').style.display = 'flex';
 });
 </script>
-
 </body>
 </html>
