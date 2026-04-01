@@ -695,16 +695,26 @@ function destroyPeer() {
   conn = null; peer = null; peerReady = false;
 }
 
+function clearSecretCodeInputs() {
+  [0,1,2,3].forEach(i => {
+    const a = document.getElementById(`sc${i}`);
+    if (a) { a.value = ''; a.classList.remove('filled'); }
+  });
+}
+
+function clearGuessInputs(rowId = null) {
+  const scope = rowId ? document.getElementById(rowId) : document;
+  if (!scope) return;
+  scope.querySelectorAll('.guess-box').forEach(el => el.value = '');
+}
+
 function resetUiForNewSession() {
   document.getElementById('join-error').style.display = 'none';
   document.getElementById('setcode-error').style.display = 'none';
   document.getElementById('setcode-waiting').style.display = 'none';
   document.getElementById('result-overlay').classList.remove('active');
-  [0,1,2,3].forEach(i => {
-    const a = document.getElementById(`sc${i}`);
-    if (a) { a.value = ''; a.classList.remove('filled'); }
-  });
-  document.querySelectorAll('.guess-box').forEach(el => el.value = '');
+  clearSecretCodeInputs();
+  clearGuessInputs();
   ['p1','p2'].forEach(p => {
     document.getElementById(`${p}-history`).innerHTML = '';
     document.getElementById(`${p}-guess-count`).textContent = '0 guesses';
@@ -1131,12 +1141,14 @@ function processGuess(role, guess) {
     // whosTurn doesn't matter once round ends, but reset for clarity
     hostGame.whosTurn = 'host';
 
-  } else if (solved) {
-    // This player solved it — the other player still needs to guess,
-    // so pass the turn to them (and keep passing on each of THEIR guesses until they solve too).
-    hostGame.whosTurn = otherRole;
+  } else if (hostGame.host.solved && !hostGame.guest.solved) {
+    // Host already finished, so guest keeps guessing until they solve too.
+    hostGame.whosTurn = 'guest';
+  } else if (hostGame.guest.solved && !hostGame.host.solved) {
+    // Guest already finished, so host keeps guessing until they solve too.
+    hostGame.whosTurn = 'host';
   } else {
-    // Normal alternating: pass to the other player
+    // Normal alternating before anyone has solved.
     hostGame.whosTurn = otherRole;
   }
 
@@ -1158,6 +1170,7 @@ function renderFromState() {
     document.getElementById('opponent-reveal').textContent = state.opponentName
       ? `🕹️ You're playing against ${state.opponentName}!`
       : 'Waiting for opponent...';
+    if (!state.myCode) clearSecretCodeInputs();
     document.getElementById('setcode-waiting').style.display = state.myCode ? 'block' : 'none';
     showScreen('setcode-screen'); return;
   }
@@ -1212,27 +1225,31 @@ function renderGameScreen() {
   const mySolvedEl  = document.getElementById(`p${myPanel}-solved`);
   const theirWaitEl = document.getElementById(`p${theirPanel}-wait-banner`);
   const theirSolved = document.getElementById(`p${theirPanel}-solved`);
+  const myRowId = `p${myPanel}-guess-row`;
 
   if (state.mySolved) {
+    clearGuessInputs(myRowId);
     myInputEl.style.display  = 'none';
     myWaitEl.style.display   = 'none';
     mySolvedEl.style.display = 'block';
   } else if (state.phase === 'playing') {
     if (isMyTurn) {
+      clearGuessInputs(myRowId);
       myInputEl.style.display = 'block';
       myWaitEl.style.display  = 'none';
       // Set up guess input events
-      const rowId = `p${myPanel}-guess-row`;
-      setupGuessInputs(rowId);
-      // Focus first empty box
-      const inputs = document.getElementById(rowId).querySelectorAll('.guess-box');
+      setupGuessInputs(myRowId);
+      // Focus first box
+      const inputs = document.getElementById(myRowId).querySelectorAll('.guess-box');
       if (inputs[0]) inputs[0].focus();
     } else {
+      clearGuessInputs(myRowId);
       myInputEl.style.display = 'none';
       myWaitEl.style.display  = 'block';
     }
     mySolvedEl.style.display = 'none';
   } else {
+    clearGuessInputs(myRowId);
     myInputEl.style.display  = 'none';
     myWaitEl.style.display   = 'none';
     mySolvedEl.style.display = 'none';
@@ -1372,10 +1389,8 @@ function resetForNextRound() {
     hostGame[role].ready   = false;
   });
   document.getElementById('result-overlay').classList.remove('active');
-  [0,1,2,3].forEach(i => {
-    const el = document.getElementById(`sc${i}`);
-    if (el) { el.value = ''; el.classList.remove('filled'); }
-  });
+  clearSecretCodeInputs();
+  clearGuessInputs();
 }
 
 function startFreshMatch() {
