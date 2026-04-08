@@ -731,9 +731,25 @@ function resetUiForNewSession() {
   });
 }
 
+// Replace YOUR-RENDER-URL with your Render service hostname, e.g. "codecrack-peer.onrender.com"
+const PEER_SERVER = {
+  host: 'YOUR-RENDER-URL',
+  port: 443,
+  path: '/myapp',
+  secure: true,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+    ]
+  }
+};
+
 function createPeer(id = undefined) {
   return new Promise((resolve, reject) => {
-    const p = id ? new Peer(id) : new Peer();
+    const p = id ? new Peer(id, PEER_SERVER) : new Peer(PEER_SERVER);
     let settled = false;
     p.on('open', () => {
       settled = true; peer = p; peerReady = true;
