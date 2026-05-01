@@ -278,6 +278,8 @@
     caret-color: transparent;
   }
   .guess-box:focus { border-color: var(--gold); }
+  .guess-box.locked { border-color: var(--gold); background: rgba(255,209,102,.14); cursor: pointer; }
+  .lock-hint { font-size: 0.7rem; color: var(--gold); font-weight: 700; text-align: center; margin-top: 6px; opacity: 0.8; }
 
   /* Status bar */
   .status-bar {
@@ -543,6 +545,7 @@
             <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
             <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
           </div>
+          <div class="lock-hint" id="p1-lock-hint" style="display:none">🔒 Click a filled digit to lock / unlock it</div>
           <button class="btn btn-primary btn-sm" onclick="submitGuess()" style="width:100%">Guess! 🎯</button>
         </div>
       </div>
@@ -567,6 +570,7 @@
             <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
             <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
           </div>
+          <div class="lock-hint" id="p2-lock-hint" style="display:none">🔒 Click a filled digit to lock / unlock it</div>
           <button class="btn btn-secondary btn-sm" onclick="submitGuess()" style="width:100%">Guess! 🎯</button>
         </div>
       </div>
@@ -616,6 +620,7 @@ let peer = null;
 let conn = null;
 let hostGame = null;
 let peerReady = false;
+let lockedDigits = [{locked:false,value:''},{locked:false,value:''},{locked:false,value:''},{locked:false,value:''}];
 const PEER_PREFIX = 'codecrack-';
 
 // ═══════════════════════════════════════════
@@ -663,6 +668,8 @@ let peekTimer = null;
 
 function setupPeek(panelNum) {
   const nameTag = document.getElementById(`p${panelNum}-name-tag`);
+  if (nameTag.dataset.peekSetup) return;
+  nameTag.dataset.peekSetup = '1';
   nameTag.classList.add('peekable');
   nameTag.addEventListener('click', () => {
     // Remove any existing popup
@@ -705,10 +712,15 @@ function clearSecretCodeInputs() {
 function clearGuessInputs(rowId = null) {
   const scope = rowId ? document.getElementById(rowId) : document;
   if (!scope) return;
-  scope.querySelectorAll('.guess-box').forEach(el => el.value = '');
+  scope.querySelectorAll('.guess-box').forEach(el => { el.value = ''; el.classList.remove('locked'); });
+}
+
+function resetLockedDigits() {
+  lockedDigits = [{locked:false,value:''},{locked:false,value:''},{locked:false,value:''},{locked:false,value:''}];
 }
 
 function resetUiForNewSession() {
+  resetLockedDigits();
   document.getElementById('join-error').style.display = 'none';
   document.getElementById('setcode-error').style.display = 'none';
   document.getElementById('setcode-waiting').style.display = 'none';
@@ -1061,17 +1073,34 @@ function setupGuessInputs(rowId) {
   const inputs = Array.from(row.querySelectorAll('.guess-box'));
 
   inputs.forEach((inp, idx) => {
-    // Remove old listeners
     const fresh = inp.cloneNode(true);
     inp.parentElement.replaceChild(fresh, inp);
   });
 
-  // Re-query after clone
   const freshInputs = Array.from(row.querySelectorAll('.guess-box'));
   freshInputs.forEach((inp, idx) => {
+    // Restore locked digit
+    if (lockedDigits[idx].locked) {
+      inp.value = lockedDigits[idx].value;
+      inp.classList.add('locked');
+    }
+
+    inp.addEventListener('click', () => {
+      if (state.difficulty !== 'hard') return;
+      if (!inp.value) return;
+      if (lockedDigits[idx].locked) {
+        lockedDigits[idx] = { locked: false, value: '' };
+        inp.classList.remove('locked');
+      } else {
+        lockedDigits[idx] = { locked: true, value: inp.value };
+        inp.classList.add('locked');
+      }
+    });
+
     inp.addEventListener('keydown', e => {
       if (e.key === 'Enter') { e.preventDefault(); submitGuess(); return; }
       if (e.key === 'Backspace') {
+        if (lockedDigits[idx].locked) { e.preventDefault(); return; }
         if (inp.value !== '') {
           inp.value = '';
           e.preventDefault();
@@ -1084,6 +1113,7 @@ function setupGuessInputs(rowId) {
     });
     inp.addEventListener('input', () => {
       inp.value = inp.value.replace(/[^0-9]/g, '').slice(-1);
+      if (lockedDigits[idx].locked && inp.value) lockedDigits[idx].value = inp.value;
       if (inp.value && idx < freshInputs.length - 1) freshInputs[idx + 1].focus();
     });
   });
@@ -1112,8 +1142,9 @@ function submitGuess() {
     notify('📨 Guess sent!');
   }
 
-  inputs.forEach(i => i.value = '');
-  if (inputs[0]) inputs[0].focus();
+  inputs.forEach((i, idx) => { if (!lockedDigits[idx].locked) i.value = ''; });
+  const firstUnlocked = inputs.find((_, idx) => !lockedDigits[idx].locked);
+  (firstUnlocked || inputs[0]).focus();
 }
 
 // ═══════════════════════════════════════════
@@ -1200,7 +1231,8 @@ function renderFromState() {
     document.getElementById('opponent-reveal').textContent = state.opponentName
       ? `🕹️ You're playing against ${state.opponentName}!`
       : 'Waiting for opponent...';
-    if (!state.myCode) clearSecretCodeInputs();
+    const alreadyOnSetcode = document.getElementById('setcode-screen').classList.contains('active');
+    if (!state.myCode && !alreadyOnSetcode) clearSecretCodeInputs();
     document.getElementById('setcode-waiting').style.display = state.myCode ? 'block' : 'none';
     showScreen('setcode-screen'); return;
   }
@@ -1264,14 +1296,16 @@ function renderGameScreen() {
     mySolvedEl.style.display = 'block';
   } else if (state.phase === 'playing') {
     if (isMyTurn) {
-      clearGuessInputs(myRowId);
+      const wasShowing = myInputEl.style.display === 'block';
+      if (!wasShowing) {
+        clearGuessInputs(myRowId);
+        setupGuessInputs(myRowId);
+        const allBoxes = Array.from(document.getElementById(myRowId).querySelectorAll('.guess-box'));
+        const firstUnlocked = allBoxes.find((_, i) => !lockedDigits[i].locked);
+        (firstUnlocked || allBoxes[0]).focus();
+      }
       myInputEl.style.display = 'block';
       myWaitEl.style.display  = 'none';
-      // Set up guess input events
-      setupGuessInputs(myRowId);
-      // Focus first box
-      const inputs = document.getElementById(myRowId).querySelectorAll('.guess-box');
-      if (inputs[0]) inputs[0].focus();
     } else {
       clearGuessInputs(myRowId);
       myInputEl.style.display = 'none';
@@ -1290,6 +1324,10 @@ function renderGameScreen() {
   theirSolved.style.display  = state.opponentSolved ? 'block' : 'none';
   // Show wait banner on opponent's side when it's their turn (and they're not solved)
   theirWaitEl.style.display  = (!state.opponentSolved && !isMyTurn && state.phase === 'playing') ? 'block' : 'none';
+
+  // Lock hint (Hard mode only)
+  const lockHintEl = document.getElementById(`p${myPanel}-lock-hint`);
+  if (lockHintEl) lockHintEl.style.display = (state.difficulty === 'hard' && myInputEl.style.display === 'block') ? 'block' : 'none';
 
   // History
   renderHistory(`p${myPanel}-history`,    `p${myPanel}-guess-count`,    state.myGuesses);
@@ -1408,6 +1446,7 @@ function showGameOver() {
 //  ROUND / MATCH MANAGEMENT
 // ═══════════════════════════════════════════
 function resetForNextRound() {
+  resetLockedDigits();
   hostGame.round += 1;
   hostGame.phase  = 'setcode';
   hostGame.roundWinner = '';
@@ -1424,6 +1463,7 @@ function resetForNextRound() {
 }
 
 function startFreshMatch() {
+  resetLockedDigits();
   const hostName  = hostGame ? hostGame.host.name  : state.myName;
   const guestName = hostGame ? hostGame.guest.name : state.opponentName;
   hostGame = {
