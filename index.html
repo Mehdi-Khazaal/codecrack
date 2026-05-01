@@ -280,6 +280,7 @@
   .guess-box:focus { border-color: var(--gold); }
   .guess-box.locked { border-color: var(--gold); background: rgba(255,209,102,.14); cursor: pointer; }
   .lock-hint { font-size: 0.7rem; color: var(--gold); font-weight: 700; text-align: center; margin-top: 6px; opacity: 0.8; }
+  .guess-digit.source-lock { outline: 2px solid var(--gold); outline-offset: 2px; background: rgba(255,209,102,.18) !important; }
 
   /* Status bar */
   .status-bar {
@@ -545,7 +546,7 @@
             <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
             <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
           </div>
-          <div class="lock-hint" id="p1-lock-hint" style="display:none">🔒 Click a filled digit to lock / unlock it</div>
+          <div class="lock-hint" id="p1-lock-hint" style="display:none">🔒 Click a digit in your history to lock that position</div>
           <button class="btn btn-primary btn-sm" onclick="submitGuess()" style="width:100%">Guess! 🎯</button>
         </div>
       </div>
@@ -570,7 +571,7 @@
             <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
             <input class="guess-box" type="text" maxlength="1" inputmode="numeric">
           </div>
-          <div class="lock-hint" id="p2-lock-hint" style="display:none">🔒 Click a filled digit to lock / unlock it</div>
+          <div class="lock-hint" id="p2-lock-hint" style="display:none">🔒 Click a digit in your history to lock that position</div>
           <button class="btn btn-secondary btn-sm" onclick="submitGuess()" style="width:100%">Guess! 🎯</button>
         </div>
       </div>
@@ -1067,7 +1068,7 @@ function submitSecretCode() {
 // ═══════════════════════════════════════════
 //  GUESS INPUTS (with backspace nav)
 // ═══════════════════════════════════════════
-function setupGuessInputs(rowId) {
+function setupGuessInputs(rowId, myPanel) {
   const row = document.getElementById(rowId);
   if (!row) return;
   const inputs = Array.from(row.querySelectorAll('.guess-box'));
@@ -1085,16 +1086,12 @@ function setupGuessInputs(rowId) {
       inp.classList.add('locked');
     }
 
+    // Click a locked input box to unlock it
     inp.addEventListener('click', () => {
-      if (state.difficulty !== 'hard') return;
-      if (!inp.value) return;
-      if (lockedDigits[idx].locked) {
-        lockedDigits[idx] = { locked: false, value: '' };
-        inp.classList.remove('locked');
-      } else {
-        lockedDigits[idx] = { locked: true, value: inp.value };
-        inp.classList.add('locked');
-      }
+      if (!lockedDigits[idx].locked) return;
+      lockedDigits[idx] = { locked: false, value: '' };
+      inp.classList.remove('locked');
+      renderHistory(`p${myPanel}-history`, `p${myPanel}-guess-count`, state.myGuesses, myPanel);
     });
 
     inp.addEventListener('keydown', e => {
@@ -1113,7 +1110,12 @@ function setupGuessInputs(rowId) {
     });
     inp.addEventListener('input', () => {
       inp.value = inp.value.replace(/[^0-9]/g, '').slice(-1);
-      if (lockedDigits[idx].locked && inp.value) lockedDigits[idx].value = inp.value;
+      if (lockedDigits[idx].locked) {
+        // Typing overrides the lock
+        lockedDigits[idx] = { locked: false, value: '' };
+        inp.classList.remove('locked');
+        renderHistory(`p${myPanel}-history`, `p${myPanel}-guess-count`, state.myGuesses, myPanel);
+      }
       if (inp.value && idx < freshInputs.length - 1) freshInputs[idx + 1].focus();
     });
   });
@@ -1299,7 +1301,7 @@ function renderGameScreen() {
       const wasShowing = myInputEl.style.display === 'block';
       if (!wasShowing) {
         clearGuessInputs(myRowId);
-        setupGuessInputs(myRowId);
+        setupGuessInputs(myRowId, myPanel);
         const allBoxes = Array.from(document.getElementById(myRowId).querySelectorAll('.guess-box'));
         const firstUnlocked = allBoxes.find((_, i) => !lockedDigits[i].locked);
         (firstUnlocked || allBoxes[0]).focus();
@@ -1330,7 +1332,7 @@ function renderGameScreen() {
   if (lockHintEl) lockHintEl.style.display = (state.difficulty === 'hard' && myInputEl.style.display === 'block') ? 'block' : 'none';
 
   // History
-  renderHistory(`p${myPanel}-history`,    `p${myPanel}-guess-count`,    state.myGuesses);
+  renderHistory(`p${myPanel}-history`,    `p${myPanel}-guess-count`,    state.myGuesses,         myPanel);
   renderHistory(`p${theirPanel}-history`, `p${theirPanel}-guess-count`, state.opponentGuesses);
 
   // Scores & round
@@ -1339,7 +1341,7 @@ function renderGameScreen() {
   document.getElementById('round-indicator').textContent = `Round ${state.round} / Best of ${state.bestOf}`;
 }
 
-function renderHistory(histId, countId, guesses) {
+function renderHistory(histId, countId, guesses, myPanel = null) {
   const el      = document.getElementById(histId);
   const countEl = document.getElementById(countId);
   countEl.textContent = `${guesses.length} guess${guesses.length !== 1 ? 'es' : ''}`;
@@ -1370,6 +1372,36 @@ function renderHistory(histId, countId, guesses) {
       } else {
         cell.classList.add('absent'); cell.textContent = d;
       }
+
+      // Mark ALL cells at this position whose value matches the current lock
+      if (myPanel !== null && lockedDigits[di].locked && d === lockedDigits[di].value) {
+        cell.classList.add('source-lock');
+      }
+
+      // Click to lock / unlock (my history, hard mode only)
+      if (myPanel !== null && state.difficulty === 'hard') {
+        cell.style.cursor = 'pointer';
+        cell.addEventListener('click', () => {
+          const inputArea = document.getElementById(`p${myPanel}-input-area`);
+          if (!inputArea || inputArea.style.display !== 'block') return;
+
+          const guessRow = document.getElementById(`p${myPanel}-guess-row`);
+          const boxes = guessRow ? guessRow.querySelectorAll('.guess-box') : [];
+
+          if (lockedDigits[di].locked && d === lockedDigits[di].value) {
+            // Same value already locked here — toggle off
+            lockedDigits[di] = { locked: false, value: '' };
+            if (boxes[di]) { boxes[di].value = ''; boxes[di].classList.remove('locked'); }
+          } else {
+            // Lock this value at this position (replaces any prior lock)
+            lockedDigits[di] = { locked: true, value: d };
+            if (boxes[di]) { boxes[di].value = d; boxes[di].classList.add('locked'); }
+          }
+
+          renderHistory(histId, countId, guesses, myPanel);
+        });
+      }
+
       row.appendChild(cell);
     });
 
